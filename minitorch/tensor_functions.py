@@ -286,89 +286,6 @@ class IsClose(Function):
         raise NotImplementedError("No backward for IsClose")
 
 
-# class Permute(Function):
-#     @staticmethod
-#     def forward(ctx: Context, t: Tensor, dims: Tensor) -> Tensor:
-#         """Forward method for Tensor Permute"""
-#         dims_numpy = dims.to_numpy()
-#         dims = tuple(int(dim) for dim in dims_numpy)
-
-#         # Skip permutation if the tensor has only one dimension
-#         if len(t.shape) == 1:
-#             return t  # Return the tensor as-is without any permutation
-
-#         ctx.save_for_backward(dims)
-
-#         # Perform the permutation
-#         permuted_tensor_data = t._tensor.permute(*dims)
-
-#         return minitorch.Tensor.make(
-#             permuted_tensor_data._storage, permuted_tensor_data.shape, backend=t.backend
-#         )
-
-#     @staticmethod
-#     def backward(ctx: Context, grad_output: Tensor) -> Tuple[Tensor, None]:
-#         """Backward method for Tensor Permute"""
-#         (dims,) = ctx.saved_tensors
-
-#         # Compute the inverse permutation
-#         inverse_dims = [dims.index(i) for i in range(len(dims))]
-
-#         # Skip permutation if the tensor has only one dimension
-#         if len(grad_output.shape) == 1:
-#             return grad_output, None  # No permutation needed for 1D gradient
-
-#         # Apply inverse permutation to the gradient
-#         permuted_grad_data = grad_output._tensor.permute(*inverse_dims)
-
-#         # Return the permuted gradient and None for dims, as dims does not need a gradient
-#         return minitorch.Tensor.make(
-#             permuted_grad_data._storage, permuted_grad_data.shape, backend=grad_output.backend
-#         ), None
-
-# class Permute(Function):
-#     @staticmethod
-#     def forward(ctx: Context, t: Tensor, dims: Optional[Tensor] = None) -> Tensor:
-#         """Forward method for Tensor Permute"""
-#         if dims is None:  # No permutation requested
-#             return t  # Return the original tensor as-is
-        
-#         # Convert dims tensor into a tuple of integers
-#         dims_numpy = dims.to_numpy()
-#         dims = tuple(int(dim) for dim in dims_numpy)
-
-#         # Save the dims for the backward pass
-#         ctx.save_for_backward(dims)
-
-#         # Perform the permutation
-#         permuted_tensor_data = t._tensor.permute(*dims)
-
-#         return minitorch.Tensor.make(
-#             permuted_tensor_data._storage, permuted_tensor_data.shape, backend=t.backend
-#         )
-
-#     @staticmethod
-#     def backward(ctx: Context, grad_output: Tensor) -> Tuple[Tensor, None]:
-#         """Backward method for Tensor Permute"""
-#         saved_values = ctx.saved_tensors
-
-#         if not saved_values:  # No permutation was applied
-#             return grad_output, None
-
-#         (dims,) = saved_values
-
-#         # Compute the inverse permutation
-#         inverse_dims = [dims.index(i) for i in range(len(dims))]
-
-#         # Apply inverse permutation to the gradient
-#         permuted_grad_data = grad_output._tensor.permute(*inverse_dims)
-
-#         return minitorch.Tensor.make(
-#             permuted_grad_data._storage, permuted_grad_data.shape, backend=grad_output.backend
-#         ), None
-
-
-
 class Permute(Function):
     @staticmethod
     def forward(ctx: Context, t: Tensor, dims: Optional[Tensor] = None) -> Tensor:
@@ -406,25 +323,6 @@ class Permute(Function):
         return minitorch.Tensor.make(
             permuted_grad_data._storage, permuted_grad_data.shape, backend=grad_output.backend
         ), dims
-
-    # @staticmethod
-    # def backward(ctx: Context, grad_output: Tensor) -> Tuple[Tensor, None]:
-    #     """Backward method for Tensor Permute"""
-    #     (dims,) = ctx.saved_tensors
-
-    #     # If no permutation was applied (identity), return the gradient unmodified
-    #     if dims == tuple(range(len(grad_output.shape))):
-    #         return grad_output, None
-
-    #     # Compute the inverse permutation
-    #     inverse_dims = [dims.index(i) for i in range(len(dims))]
-
-    #     # Apply the inverse permutation to the gradient
-    #     permuted_grad_data = grad_output._tensor.permute(*inverse_dims)
-
-    #     return minitorch.Tensor.make(
-    #         permuted_grad_data._storage, permuted_grad_data.shape, backend=grad_output.backend
-    #     ), None
 
 
 

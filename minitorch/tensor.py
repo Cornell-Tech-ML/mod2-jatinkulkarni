@@ -109,7 +109,6 @@ class Tensor:
 
     def _ensure_tensor(self, b: TensorLike) -> Tensor:
         """Turns a python number into a tensor with the same backend."""
-        # print(f"🙊🙊🙊🙊🙊🙊🙊 b: {b}")
         if isinstance(b, (int, float)):
             c = Tensor.make([b], (1,), backend=self.backend)
         else:
@@ -255,12 +254,9 @@ class Tensor:
 
         x = h.last_fn._backward(h.ctx, d_output)
         assert len(x) == len(h.inputs), f"Bug in function {h.last_fn}"
-        print(f"🟤🟤🟤🟤🟤🟤🟤🟤🟤🟤🟤 h.inputs:{h.inputs} x: {x}")
         result = []
         for inp, d_in in zip(h.inputs, x):
-            print(f"🟥🟥🟥🟥🟥🟥🟥🟥🟥 inp:{inp} d_in:{d_in}")
             val2 = inp.expand(self._ensure_tensor(d_in))
-            print(f"🟧🟧🟧🟧🟧🟧🟧🟧🟧 val2: {val2}")
             result.append((inp, val2))
 
         return result
@@ -270,12 +266,9 @@ class Tensor:
         # ]
 
     def backward(self, grad_output: Optional[Tensor] = None) -> None:
-        print("🔵🔵🔵🔵🔵🔵🔵🔵🔵🔵🔵")
         if grad_output is None:
             assert self.shape == (1,), "Must provide grad_output if non-scalar"
             grad_output = Tensor.make([1.0], (1,), backend=self.backend)
-            print(f"🟪🟪🟪🟪🟪🟪🟪🟪🟪🟪 Grad output was none: {grad_output}")
-        print("🟣🟣🟣🟣🟣🟣🟣🟣🟣🟣🟣")
         backpropagate(self, grad_output)
 
     def __truediv__(self, b: TensorLike) -> Tensor:

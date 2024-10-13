@@ -164,24 +164,19 @@ def backpropagate(variable: Variable, deriv: Any) -> None:
         None: Updates the derivative values of each leaf through accumulate_derivative`.
 
     """
-    print(f"⬛️⬛️⬛️⬛️⬛️⬛️⬛️ variable: {variable}")
     queue = topological_sort(variable)
     derivatives = {}
     derivatives[variable.unique_id] = deriv
-    print(f"🟨🟨🟨🟨🟨🟨🟨🟨 queue: {queue}")
     for var in queue:
         deriv = derivatives[var.unique_id]
-        print(f"⚫️⚫️⚫️⚫️⚫️⚫️⚫️⚫️⚫️⚫️⚫️ {var} {var.is_leaf()}")
         if var.is_leaf():
             var.accumulate_derivative(deriv)
         else:
-            print("⚪️⚪️⚪️⚪️⚪️⚪️⚪️⚪️")
             for v, d in var.chain_rule(deriv):
                 if v.is_constant():
                     continue
                 derivatives.setdefault(v.unique_id, 0.0)
                 derivatives[v.unique_id] = derivatives[v.unique_id] + d
-        print("🟫🟫🟫🟫🟫🟫🟫🟫🟫🟫🟫🟫")
 
 @dataclass
 class Context:
