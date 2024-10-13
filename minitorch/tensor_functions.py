@@ -97,7 +97,7 @@ class Add(Function):
 
 class All(Function):
     @staticmethod
-    def forward(ctx: Context, a: Tensor, dim: Tensor) -> Tensor:
+    def forward(ctx: Context, a: Tensor, dim: Tensor = None) -> Tensor:
         """Return 1 if all are true"""
         if dim is not None:
             return a.f.mul_reduce(a, int(dim.item()))
@@ -106,6 +106,327 @@ class All(Function):
 
 
 # TODO: Implement for Task 2.3.
+class Mul(Function):
+    @staticmethod
+    def forward(ctx: Context, t1: Tensor, t2: Tensor) -> Tensor:
+        """Forward method for Tensor Multiplication"""
+        # raise NotImplementedError("Need to implement for Task 2.3")
+        ctx.save_for_backward(t1, t2)
+        return t1.f.mul_zip(t1, t2)
+
+
+    @staticmethod
+    def backward(ctx: Context, grad_output: Tensor) -> Tuple[Tensor, Tensor]:
+        """Backward method for Tensor Multiplication"""
+        #  raise NotImplementedError("Need to implement for Task 2.3")
+        t1, t2 = ctx.saved_tensors
+
+        grad_t1 = grad_output.f.mul_zip(grad_output, t2)
+        grad_t2 = grad_output.f.mul_zip(grad_output, t1)
+
+        return grad_t1, grad_t2
+
+class Sigmoid(Function):
+    @staticmethod
+    def forward(ctx: Context, t: Tensor) -> Tensor:
+        """Forward method for Tensor Sigmoid"""
+        # raise NotImplementedError("Need to implement for Task 2.3")
+        ctx.save_for_backward(t)
+        return t.f.sigmoid_map(t)
+
+    @staticmethod
+    def backward(ctx: Context, grad_output: Tensor) -> Tensor:
+        """Backward method for Tensor Sigmoid"""
+        # raise NotImplementedError("Need to implement for Task 2.3")
+        (t,) = ctx.saved_tensors
+        grad_t = t.f.mul_zip(t.f.sigmoid_map(t), (t._ensure_tensor(1) - t.f.sigmoid_map(t)))
+        return grad_t * grad_output
+
+
+class ReLU(Function):
+    @staticmethod
+    def forward(ctx: Context, t: Tensor) -> Tensor:
+        """Forward method for Tensor ReLU"""
+        # raise NotImplementedError("Need to implement for Task 2.3")
+        ctx.save_for_backward(t)
+        return t.f.relu_map(t)
+
+    @staticmethod
+    def backward(ctx: Context, grad_output: Tensor) -> Tensor:
+        """Backward method for Tensor ReLU"""
+        # raise NotImplementedError("Need to implement for Task 2.3")
+        (t,) = ctx.saved_tensors
+        return t.f.relu_back_zip(t, grad_output)
+
+
+class Log(Function):
+    @staticmethod
+    def forward(ctx: Context, t: Tensor) -> Tensor:
+        """Forward method for Tensor Log"""
+        # raise NotImplementedError("Need to implement for Task 2.3")
+        ctx.save_for_backward(t)
+        return t.f.log_map(t)
+
+    @staticmethod
+    def backward(ctx: Context, grad_output: Tensor) -> Tensor:
+        """Backward Method for Tensor Log"""
+        # raise NotImplementedError("Need to implement for Task 2.3")
+        (t,) = ctx.saved_tensors
+        return t.f.log_back_zip(t, grad_output)
+
+
+class Exp(Function):
+    @staticmethod
+    def forward(ctx: Context, t: Tensor) -> Tensor:
+        """Forward method for Tensor Exp"""
+        # raise NotImplementedError("Need to implement for Task 2.3")
+        ctx.save_for_backward(t)
+        return t.f.exp_map(t)
+
+    @staticmethod
+    def backward(ctx: Context, grad_output: Tensor) -> Tensor:
+        """Backward method for Tensor Exp"""
+        # raise NotImplementedError("Need to implement for Task 2.3")
+        (t,) = ctx.saved_tensors
+        return t.f.mul_zip(t.f.exp_map(t), grad_output)
+
+
+class Sum(Function):
+    @staticmethod
+    def forward(ctx: Context, t: Tensor, dim: Tensor = None) -> Tensor:
+        """Forward method for Tensor Sum"""
+        # raise NotImplementedError("Need to implement for Task 2.3")
+        ctx.save_for_backward(t, dim)
+        if dim is not None:
+            dim = dim.item()
+            return t.f.add_reduce(t, int(dim))
+        else:
+            return t.f.add_reduce(t.contiguous().view(int(operators.prod(t.shape))), 0)
+
+    @staticmethod
+    def backward(ctx: Context, grad_output: Tensor) -> Tensor:
+        """Backward method for Tensor Sum"""
+        (t, dim) = ctx.saved_tensors 
+
+        if dim is not None:
+            dim = dim.item()
+            shape = list(t.shape)
+            shape[int(dim)] = 1
+
+            reshaped_grad = grad_output.view(shape)
+
+            broadcast_shape = t._tensor.shape_broadcast(reshaped_grad.shape, t.shape)
+            broadcasted_grad = reshaped_grad.zeros(broadcast_shape)
+
+            for big_index in t._tensor.indices():
+                small_index = np.zeros_like(big_index)
+                t._tensorbroadcast_index(big_index, t._tensor.shape, reshaped_grad._tensor.shape, small_index)
+                broadcasted_grad._tensor.set(big_index, reshaped_grad._tensor.get(tuple(small_index)))
+
+            return broadcasted_grad
+        
+        else:
+            broadcast_shape = t._tensor.shape_broadcast(grad_output.shape, t.shape)
+            broadcasted_grad = grad_output.zeros(broadcast_shape)
+
+            for big_index in t._tensor.indices():
+                broadcasted_grad._tensor.set(big_index, grad_output._tensor.get((0,)))
+
+            return broadcasted_grad
+
+
+class LT(Function):
+    @staticmethod
+    def forward(ctx: Context, t1: Tensor, t2: Tensor) -> Tensor:
+        """Forward method for Tensor LT"""
+        # raise NotImplementedError("Need to implement for Task 2.3")
+        ctx.save_for_backward(t1, t2)
+        return t1.f.lt_zip(t1, t2)
+
+    @staticmethod
+    def backward(ctx: Context, grad_output: Tensor) -> Tuple[Tensor, Tensor]:
+        """Backward method for Tensor LT"""
+        # raise NotImplementedError("Need to implement for Task 2.3")
+        (t1, t2) = ctx.saved_tensors
+        zero_t1 = t1.f.zeros(t1.shape)
+        zero_t2 = t2.f.zeros(t2.shape)
+        return zero_t1, zero_t2
+
+
+class EQ(Function):
+    @staticmethod
+    def forward(ctx: Context, t1: Tensor, t2: Tensor) -> Tensor:
+        """Forward method for Tensor EQ"""
+        # raise NotImplementedError("Need to implement for Task 2.3")
+        ctx.save_for_backward(t1, t2)
+        return t1.f.eq_zip(t1, t2)
+
+    @staticmethod
+    def backward(ctx: Context, grad_output: Tensor) -> Tuple[Tensor, Tensor]:
+        """Backward method for Tensor EQ"""
+        # raise NotImplementedError("Need to implement for Task 2.3")
+        (t1, t2) = ctx.saved_tensors
+        zero_t1 = t1.f.zeros(t1.shape)
+        zero_t2 = t2.f.zeros(t2.shape)
+        return zero_t1, zero_t2
+
+
+class IsClose(Function):
+    @staticmethod
+    def forward(ctx: Context, t1: Tensor, t2: Tensor, tolerance: float = 1e-5) -> Tensor:
+        """Forward method for Tensor is_close"""
+        # raise NotImplementedError("Need to implement for Task 2.3")
+        ctx.save_for_backward(t1, t2)
+        return t1.f.is_close_zip(t1, t2)
+
+    # No backward function for IsClose
+    @staticmethod
+    def backward(ctx: Context, grad_output: Tensor) -> Tuple[Tensor, Tensor]:
+        """There is no Backward method for Tensor is_close"""
+        raise NotImplementedError("No backward for IsClose")
+
+
+# class Permute(Function):
+#     @staticmethod
+#     def forward(ctx: Context, t: Tensor, dims: Tensor) -> Tensor:
+#         """Forward method for Tensor Permute"""
+#         dims_numpy = dims.to_numpy()
+#         dims = tuple(int(dim) for dim in dims_numpy)
+
+#         # Skip permutation if the tensor has only one dimension
+#         if len(t.shape) == 1:
+#             return t  # Return the tensor as-is without any permutation
+
+#         ctx.save_for_backward(dims)
+
+#         # Perform the permutation
+#         permuted_tensor_data = t._tensor.permute(*dims)
+
+#         return minitorch.Tensor.make(
+#             permuted_tensor_data._storage, permuted_tensor_data.shape, backend=t.backend
+#         )
+
+#     @staticmethod
+#     def backward(ctx: Context, grad_output: Tensor) -> Tuple[Tensor, None]:
+#         """Backward method for Tensor Permute"""
+#         (dims,) = ctx.saved_tensors
+
+#         # Compute the inverse permutation
+#         inverse_dims = [dims.index(i) for i in range(len(dims))]
+
+#         # Skip permutation if the tensor has only one dimension
+#         if len(grad_output.shape) == 1:
+#             return grad_output, None  # No permutation needed for 1D gradient
+
+#         # Apply inverse permutation to the gradient
+#         permuted_grad_data = grad_output._tensor.permute(*inverse_dims)
+
+#         # Return the permuted gradient and None for dims, as dims does not need a gradient
+#         return minitorch.Tensor.make(
+#             permuted_grad_data._storage, permuted_grad_data.shape, backend=grad_output.backend
+#         ), None
+
+# class Permute(Function):
+#     @staticmethod
+#     def forward(ctx: Context, t: Tensor, dims: Optional[Tensor] = None) -> Tensor:
+#         """Forward method for Tensor Permute"""
+#         if dims is None:  # No permutation requested
+#             return t  # Return the original tensor as-is
+        
+#         # Convert dims tensor into a tuple of integers
+#         dims_numpy = dims.to_numpy()
+#         dims = tuple(int(dim) for dim in dims_numpy)
+
+#         # Save the dims for the backward pass
+#         ctx.save_for_backward(dims)
+
+#         # Perform the permutation
+#         permuted_tensor_data = t._tensor.permute(*dims)
+
+#         return minitorch.Tensor.make(
+#             permuted_tensor_data._storage, permuted_tensor_data.shape, backend=t.backend
+#         )
+
+#     @staticmethod
+#     def backward(ctx: Context, grad_output: Tensor) -> Tuple[Tensor, None]:
+#         """Backward method for Tensor Permute"""
+#         saved_values = ctx.saved_tensors
+
+#         if not saved_values:  # No permutation was applied
+#             return grad_output, None
+
+#         (dims,) = saved_values
+
+#         # Compute the inverse permutation
+#         inverse_dims = [dims.index(i) for i in range(len(dims))]
+
+#         # Apply inverse permutation to the gradient
+#         permuted_grad_data = grad_output._tensor.permute(*inverse_dims)
+
+#         return minitorch.Tensor.make(
+#             permuted_grad_data._storage, permuted_grad_data.shape, backend=grad_output.backend
+#         ), None
+
+
+
+class Permute(Function):
+    @staticmethod
+    def forward(ctx: Context, t: Tensor, dims: Optional[Tensor] = None) -> Tensor:
+        """Forward method for Tensor Permute"""
+        ctx.save_for_backward(dims)
+
+        if dims is None:
+            ctx.save_for_backward(tuple(range(len(t.shape))))
+            return t
+        
+        dims_numpy = dims.to_numpy()
+        dims = tuple(int(dim) for dim in dims_numpy)
+
+        permuted_tensor_data = t._tensor.permute(*dims)
+
+        return minitorch.Tensor.make(
+            permuted_tensor_data._storage, permuted_tensor_data.shape, backend=t.backend
+        )
+
+    @staticmethod
+    def backward(ctx: Context, grad_output: Tensor) -> Tuple[Tensor, Tensor]:
+        """Backward method for Tensor Permute"""
+        (dims,) = ctx.saved_tensors
+
+        if dims is None:
+            return grad_output, minitorch.Tensor.make(list(range(len(grad_output.shape))), grad_output.shape, backend=t.backend)
+
+        dims_numpy = dims.to_numpy()
+        dims_tuple = tuple(int(dim) for dim in dims_numpy)
+
+        inverse_dims = [dims_tuple.index(i) for i in range(len(dims_tuple))]
+
+        permuted_grad_data = grad_output._tensor.permute(*inverse_dims)
+
+        return minitorch.Tensor.make(
+            permuted_grad_data._storage, permuted_grad_data.shape, backend=grad_output.backend
+        ), dims
+
+    # @staticmethod
+    # def backward(ctx: Context, grad_output: Tensor) -> Tuple[Tensor, None]:
+    #     """Backward method for Tensor Permute"""
+    #     (dims,) = ctx.saved_tensors
+
+    #     # If no permutation was applied (identity), return the gradient unmodified
+    #     if dims == tuple(range(len(grad_output.shape))):
+    #         return grad_output, None
+
+    #     # Compute the inverse permutation
+    #     inverse_dims = [dims.index(i) for i in range(len(dims))]
+
+    #     # Apply the inverse permutation to the gradient
+    #     permuted_grad_data = grad_output._tensor.permute(*inverse_dims)
+
+    #     return minitorch.Tensor.make(
+    #         permuted_grad_data._storage, permuted_grad_data.shape, backend=grad_output.backend
+    #     ), None
+
+
 
 
 class View(Function):
@@ -285,12 +606,15 @@ def grad_central_difference(
 
 def grad_check(f: Any, *vals: Tensor) -> None:
     """Check whether autodiff matches central difference."""
+    print(f"🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴 f: {f} vals: {vals}")
     for x in vals:
         x.requires_grad_(True)
         x.zero_grad_()
     random.seed(10)
     out = f(*vals)
+    print("🟡🟡🟡🟡🟡🟡🟡🟡🟡🟡")
     out.sum().backward()
+    print("🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢")
     err_msg = """
 
 Gradient check error for function %s.
