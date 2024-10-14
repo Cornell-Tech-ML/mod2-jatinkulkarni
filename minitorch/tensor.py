@@ -253,7 +253,6 @@ class Tensor:
         assert h.ctx is not None
 
         x = h.last_fn._backward(h.ctx, d_output)
-        print(f"🟩🟩🟩🟩🟩🟩 {h.last_fn} {len(x)} {len(h.inputs)}")
         assert len(x) == len(h.inputs), f"Bug in function {h.last_fn}"
         return [
             (inp, inp.expand(self._ensure_tensor(d_in)))
@@ -419,15 +418,18 @@ class Tensor:
         return Permute.apply(self, dims_tensor)
 
 
-
-    def view(self, dim: Tensor = None) -> Tensor:
+    def view(self, *dims: int) -> Tensor:
         """Performs view on Tensor"""
-        print(f"🟫🟫🟫🟫🟫🟫🟫🟫🟫🟫{type(dim)} {dim}")
-        if dim is not None:
-            dim = self._ensure_tensor(dim)
-            return View.apply(self, dim)
-            
-        return View.apply(self)
+        # If no dimensions are passed, return the tensor as-is
+        if len(dims) == 0:
+            return self
+        
+        # Ensure that dims are valid integers and convert them to a tensor
+        dims_tensor = Tensor.make(list(dims), (len(dims),), backend=self.backend)
+
+        # Apply the View operation
+        return View.apply(self, dims_tensor)
+
 
     def zero_grad_(self) -> None:
         """Sets grad to None"""

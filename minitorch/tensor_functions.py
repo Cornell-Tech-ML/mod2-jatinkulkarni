@@ -204,34 +204,25 @@ class Sum(Function):
             return t.f.add_reduce(t.contiguous().view(int(operators.prod(t.shape))), 0)
 
     @staticmethod
-    def backward(ctx: Context, grad_output: Tensor) -> Tensor:
+    def backward(ctx: Context, grad_output: Tensor) -> Tuple[Tensor,]:
         """Backward method for Tensor Sum"""
-        (t, dim) = ctx.saved_tensors 
+        (t, dim) = ctx.saved_tensors
 
         if dim is not None:
-            dim = dim.item()
+            dim_item = dim.item()
             shape = list(t.shape)
-            shape[int(dim)] = 1
+            shape[int(dim_item)] = 1
 
-            reshaped_grad = grad_output.view(shape)
+            reshaped_grad = grad_output.view(*shape)
 
-            broadcast_shape = t._tensor.shape_broadcast(reshaped_grad.shape, t.shape)
-            broadcasted_grad = reshaped_grad.zeros(broadcast_shape)
+            broadcasted_grad = t.expand(reshaped_grad)
 
-            for big_index in t._tensor.indices():
-                small_index = np.zeros_like(big_index)
-                t._tensorbroadcast_index(big_index, t._tensor.shape, reshaped_grad._tensor.shape, small_index)
-                broadcasted_grad._tensor.set(big_index, reshaped_grad._tensor.get(tuple(small_index)))
+            return broadcasted_grad, dim
 
-            return broadcasted_grad
-        
         else:
-            broadcast_shape = t._tensor.shape_broadcast(grad_output.shape, t.shape)
-            broadcasted_grad = grad_output.zeros(broadcast_shape)
-
-            for big_index in t._tensor.indices():
-                broadcasted_grad._tensor.set(big_index, grad_output._tensor.get((0,)))
-
+            # Case where summation was over all dimensions (result is scalar)
+            # Expand the scalar gradient back to the original shape of the tensor `t`
+            broadcasted_grad = t.expand(grad_output)
             return broadcasted_grad
 
 
@@ -248,8 +239,8 @@ class LT(Function):
         """Backward method for Tensor LT"""
         # raise NotImplementedError("Need to implement for Task 2.3")
         (t1, t2) = ctx.saved_tensors
-        zero_t1 = t1.f.zeros(t1.shape)
-        zero_t2 = t2.f.zeros(t2.shape)
+        zero_t1 = zeros(t1.shape, t1.backend)
+        zero_t2 = zeros(t2.shape, t2.backend)
         return zero_t1, zero_t2
 
 
@@ -266,8 +257,8 @@ class EQ(Function):
         """Backward method for Tensor EQ"""
         # raise NotImplementedError("Need to implement for Task 2.3")
         (t1, t2) = ctx.saved_tensors
-        zero_t1 = t1.f.zeros(t1.shape)
-        zero_t2 = t2.f.zeros(t2.shape)
+        zero_t1 = zeros(t1.shape, t1.backend)
+        zero_t2 = zeros(t2.shape, t1.backend)
         return zero_t1, zero_t2
 
 
@@ -504,15 +495,12 @@ def grad_central_difference(
 
 def grad_check(f: Any, *vals: Tensor) -> None:
     """Check whether autodiff matches central difference."""
-    print(f"🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴 f: {f} vals: {vals}")
     for x in vals:
         x.requires_grad_(True)
         x.zero_grad_()
     random.seed(10)
     out = f(*vals)
-    print("🟡🟡🟡🟡🟡🟡🟡🟡🟡🟡")
     out.sum().backward()
-    print("🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢")
     err_msg = """
 
 Gradient check error for function %s.
