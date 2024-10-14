@@ -253,17 +253,12 @@ class Tensor:
         assert h.ctx is not None
 
         x = h.last_fn._backward(h.ctx, d_output)
+        print(f"🟩🟩🟩🟩🟩🟩 {h.last_fn} {len(x)} {len(h.inputs)}")
         assert len(x) == len(h.inputs), f"Bug in function {h.last_fn}"
-        result = []
-        for inp, d_in in zip(h.inputs, x):
-            val2 = inp.expand(self._ensure_tensor(d_in))
-            result.append((inp, val2))
-
-        return result
-        # return [
-        #     (inp, inp.expand(self._ensure_tensor(d_in)))
-        #     for inp, d_in in zip(h.inputs, x)
-        # ]
+        return [
+            (inp, inp.expand(self._ensure_tensor(d_in)))
+            for inp, d_in in zip(h.inputs, x)
+        ]
 
     def backward(self, grad_output: Optional[Tensor] = None) -> None:
         if grad_output is None:
@@ -417,12 +412,8 @@ class Tensor:
 
     def permute(self, *dims: int) -> Tensor:
         """Permute Tensor"""
-        # if len(dims) != len(self.shape):
-        #     raise ValueError(f"Expected {len(self.shape)} dimensions but got {len(dims)}")
-        
-        # Check if the tensor is 1-dimensional and doesn't require permutation
         if len(self.shape) == 1:
-            return self  # No permutation is needed for a single-element tensor
+            return self
 
         dims_tensor = Tensor.make(list(dims), (len(dims),), backend=self.backend)
         return Permute.apply(self, dims_tensor)
@@ -431,9 +422,11 @@ class Tensor:
 
     def view(self, dim: Tensor = None) -> Tensor:
         """Performs view on Tensor"""
+        print(f"🟫🟫🟫🟫🟫🟫🟫🟫🟫🟫{type(dim)} {dim}")
         if dim is not None:
             dim = self._ensure_tensor(dim)
             return View.apply(self, dim)
+            
         return View.apply(self)
 
     def zero_grad_(self) -> None:
