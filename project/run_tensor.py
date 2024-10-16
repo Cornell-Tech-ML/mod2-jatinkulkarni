@@ -13,6 +13,61 @@ def RParam(*shape):
 
 # TODO: Implement for Task 2.5.
 
+class Network(minitorch.Module):
+    def __init__(self, hidden_layers):
+        super().__init__()
+        in_size = 2
+        out_size = 1
+
+        self.layer1 = Linear(in_size, hidden_layers)
+        self.layer2 = Linear(hidden_layers, hidden_layers)
+        self.layer3 = Linear(hidden_layers, out_size)
+
+    def forward(self, x):
+        """
+        Perform a forward pass through the network:
+        x -> layer1 -> relu -> layer2 -> relu -> layer3 -> sigmoid
+        """
+        middle = self.layer1.forward(x).relu()
+        
+        end = self.layer2.forward(middle).relu()
+        
+        return self.layer3.forward(end).sigmoid()
+
+
+class Linear(minitorch.Module):
+    def __init__(self, in_size, out_size):
+        super().__init__()
+        self.in_size = in_size
+        self.out_size = out_size
+
+        self.weights = self.add_parameter("weights", RParam(in_size, out_size).value)
+        self.bias = self.add_parameter("bias", RParam(out_size).value)
+
+        self.weights.value.requires_grad_(True)
+        self.bias.value.requires_grad_(True)
+
+    def forward(self, inputs: minitorch.Tensor) -> minitorch.Tensor:
+        if len(inputs.shape) == 1:
+            inputs = inputs.view(1, -1)
+
+        batch_size = inputs.shape[0]
+        in_size = inputs.shape[1]
+        bias = self.bias.value 
+
+        output = minitorch.zeros((batch_size, self.out_size))
+
+        for i in range(batch_size):
+            for j in range(self.out_size):
+                output[i, j] = self.bias.value[j]
+                for k in range(in_size):
+                    output[i, j] += inputs[i, k] * self.weights.value[k, j]
+
+        return output
+
+
+
+
 def default_log_fn(epoch, total_loss, correct, losses):
     print("Epoch ", epoch, " loss ", total_loss, "correct", correct)
 
