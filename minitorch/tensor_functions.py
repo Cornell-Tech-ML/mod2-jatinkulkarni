@@ -220,8 +220,6 @@ class Sum(Function):
             return broadcasted_grad, dim
 
         else:
-            # Case where summation was over all dimensions (result is scalar)
-            # Expand the scalar gradient back to the original shape of the tensor `t`
             broadcasted_grad = t.expand(grad_output)
             return broadcasted_grad
 

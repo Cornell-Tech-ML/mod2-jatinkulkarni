@@ -51,19 +51,26 @@ class Linear(minitorch.Module):
         if len(inputs.shape) == 1:
             inputs = inputs.view(1, -1)
 
+
         batch_size = inputs.shape[0]
         in_size = inputs.shape[1]
         bias = self.bias.value 
+        out_size = self.out_size
 
-        output = minitorch.zeros((batch_size, self.out_size))
+        weights = self.weights
+        weights_t = self.weights.value.permute(1, 0)
 
-        for i in range(batch_size):
-            for j in range(self.out_size):
-                output[i, j] = self.bias.value[j]
-                for k in range(in_size):
-                    output[i, j] += inputs[i, k] * self.weights.value[k, j]
+        inputs_reshaped = inputs.view(batch_size, 1, in_size)
 
-        return output
+        output = inputs_reshaped * weights_t
+        output = output.sum(2)
+        output = output.view(batch_size, out_size)
+
+
+        return output + bias
+
+
+       
 
 
 
