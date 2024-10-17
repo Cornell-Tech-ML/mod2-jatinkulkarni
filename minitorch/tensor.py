@@ -285,3 +285,155 @@ class Tensor:
 
     # Functions
     # TODO: Implement for Task 2.3.
+    """
+    ✅ add
+    ✅ sub
+    ✅ mul
+    ✅ lt
+    ✅ eq
+    ✅ gt
+    ✅ neg
+    ✅ radd
+    ✅ rmul
+    ✅ all
+    ✅ is_close
+    ✅ sigmoid
+    ✅ relu
+    ✅ log
+    ✅ exp
+
+    Should take an optional dim argument:
+    ✅ sum
+    ✅ mean
+    ✅ permute
+    ✅ view
+
+    Should set .grad to None - zero_grad_
+    """
+    @property
+    def size(self) -> int:
+        """Return the total number of elements in the tensor."""
+        return int(np.prod(self.shape))
+
+    @property
+    def dims(self) -> int:
+        """Return the number of dimensions in the tensor."""
+        return len(self.shape)
+
+
+
+    def __add__(self, y: Tensor) -> Tensor:
+        """Adding self Tensor and y Tensor"""
+        y = self._ensure_tensor(y)
+        # y.zero_grad_()
+        return Add.apply(self, y)
+
+    def __sub__(self, y: TensorLike) -> Tensor:
+        """Subtracting self Tensor by y Tensor"""
+        y = self._ensure_tensor(y)
+        return Add.apply(self, Neg.apply(y))
+
+    def __mul__(self, y: TensorLike) -> Tensor:
+        """Multiplying self Tensor and y Tensor"""
+        y = self._ensure_tensor(y)
+        return Mul.apply(self, y)
+
+    def __lt__(self, y: TensorLike) -> Tensor:
+        """Checking Less Than operation on self Tensor and y Tensor"""
+        y = self._ensure_tensor(y)
+        return LT.apply(self, y)
+
+    def __eq__(self, y: TensorLike) -> Tensor:
+        """Checing Equal To operation on self Tensor and y Tensor"""
+        y = self._ensure_tensor(y)
+        return EQ.apply(self, y)
+
+    def __gt__(self, y: TensorLike) -> Tensor:
+        """Checking Greater Than operation on self Tensor and y Tensor"""
+        y = self._ensure_tensor(y)
+        return LT.apply(y, self)
+
+    def __neg__(self) -> Tensor:
+        """Negate self Tensor"""
+        return Neg.apply(self)
+
+    def __radd__(self, y: Tensor) -> Tensor:
+        """Right adding self Tensor and y Tensor"""
+        return self.__add__(y)
+
+    def __rmul__(self, y: Tensor) -> Tensor:
+        """Right multiplying self Tensor and y Tensor"""
+        return self.__mul__(y)
+
+    def all(self, dim: Tensor = None) -> Tensor:
+        """Return All for self Tensor"""
+        if dim is not None:
+            dim = self._ensure_tensor(dim)
+            return All.apply(self, dim)
+        return All.apply(self)
+
+    def is_close(self, y: Tensor) -> Tensor:
+        """Checks if both tensors are close"""
+        y = self._ensure_tensor(y)
+        return IsClose.apply(self, y)
+
+    def sigmoid(self) -> Tensor:
+        """Applies Sigmoid to self Tensor"""
+        return Sigmoid.apply(self)
+
+    def relu(self) -> Tensor:
+        """Applies ReLU to self Tensor"""
+        return ReLU.apply(self)
+
+    def log(self) -> Tensor:
+        """Appllies Log to self Tensor"""
+        return Log.apply(self)
+    
+    def exp(self) -> Tensor:
+        """Applies Exp to self Tensor"""
+        return Exp.apply(self)
+
+    def sum(self, dim: Tensor = None) -> Tensor:
+        """Applies sum to self, tensor"""
+        if dim is not None:
+            dim = self._ensure_tensor(dim)
+            return Sum.apply(self, dim)
+        return Sum.apply(self)
+
+    def mean(self, dim: Tensor = None) -> Tensor:
+        """Calculates mean of Tensor"""
+        summed = self.sum(dim)
+        if dim is None:
+            num_elements = self.size 
+        else:
+            num_elements = self.shape[dim]
+        return summed / num_elements
+
+    def permute(self, *dims: int) -> Tensor:
+        """Permute Tensor"""
+        if len(self.shape) == 1:
+            return self
+
+        dims_tensor = Tensor.make(list(dims), (len(dims),), backend=self.backend)
+        return Permute.apply(self, dims_tensor)
+
+
+    def view(self, *dims: int) -> Tensor:
+        """Performs view on Tensor"""
+        # If no dimensions are passed, return the tensor as-is
+        if len(dims) == 0:
+            return self
+        
+        # Ensure that dims are valid integers and convert them to a tensor
+        dims_tensor = Tensor.make(list(dims), (len(dims),), backend=self.backend)
+
+        # Apply the View operation
+        return View.apply(self, dims_tensor)
+
+
+    def zero_grad_(self) -> None:
+        """Sets grad to None"""
+        self.grad = None
+
+
+    
