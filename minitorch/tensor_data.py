@@ -97,10 +97,10 @@ def broadcast_index(
     # raise NotImplementedError("Need to implement for Task 2.2")
     offset = len(big_shape) - len(shape)
 
-    for i in range(len(shape)):
+    for i, dim in enumerate(shape):
         big_dim_index = i + offset
-
-        if shape[i] == 1:
+        
+        if dim == 1:
             out_index[i] = 0
         else:
             out_index[i] = big_index[big_dim_index]
