@@ -182,6 +182,7 @@ def backpropagate(variable: Variable, deriv: Any) -> None:
                 derivatives[v.unique_id] = derivatives[v.unique_id] + d
     # ASIGN1.4
 
+
 @dataclass
 class Context:
     """Context class is used by `Function` to store information during the forward pass."""

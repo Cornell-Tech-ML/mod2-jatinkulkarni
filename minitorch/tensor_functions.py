@@ -14,7 +14,7 @@ from .autodiff import Context
 from .tensor_ops import SimpleBackend, TensorBackend
 
 if TYPE_CHECKING:
-    from typing import Any, List, Tuple
+    from typing import Any, List, Tuple, Optional
 
     from .tensor import Tensor
     from .tensor_data import UserIndex, UserShape
@@ -66,21 +66,25 @@ class Function:
 class Neg(Function):
     @staticmethod
     def forward(ctx: Context, t1: Tensor) -> Tensor:
+        """Forward method for Negation method"""
         return t1.f.neg_map(t1)
 
     @staticmethod
     def backward(ctx: Context, grad_output: Tensor) -> Tensor:
+        """Backward method for Negation Method"""
         return grad_output.f.neg_map(grad_output)
 
 
 class Inv(Function):
     @staticmethod
     def forward(ctx: Context, t1: Tensor) -> Tensor:
+        """Forward method for Inverse Method"""
         ctx.save_for_backward(t1)
         return t1.f.inv_map(t1)
 
     @staticmethod
     def backward(ctx: Context, grad_output: Tensor) -> Tensor:
+        """Backward method for Inverse Method"""
         (t1,) = ctx.saved_values
         return grad_output.f.inv_back_zip(t1, grad_output)
 
@@ -88,10 +92,12 @@ class Inv(Function):
 class Add(Function):
     @staticmethod
     def forward(ctx: Context, t1: Tensor, t2: Tensor) -> Tensor:
+        """Forward method for Add method"""
         return t1.f.add_zip(t1, t2)
 
     @staticmethod
     def backward(ctx: Context, grad_output: Tensor) -> Tuple[Tensor, Tensor]:
+        """Backward method for Add Method"""
         return grad_output, grad_output
 
 
@@ -114,7 +120,6 @@ class Mul(Function):
         ctx.save_for_backward(t1, t2)
         return t1.f.mul_zip(t1, t2)
 
-
     @staticmethod
     def backward(ctx: Context, grad_output: Tensor) -> Tuple[Tensor, Tensor]:
         """Backward method for Tensor Multiplication"""
@@ -125,6 +130,7 @@ class Mul(Function):
         grad_t2 = grad_output.f.mul_zip(grad_output, t1)
 
         return grad_t1, grad_t2
+
 
 class Sigmoid(Function):
     @staticmethod
@@ -139,7 +145,9 @@ class Sigmoid(Function):
         """Backward method for Tensor Sigmoid"""
         # raise NotImplementedError("Need to implement for Task 2.3")
         (t,) = ctx.saved_tensors
-        grad_t = t.f.mul_zip(t.f.sigmoid_map(t), (t._ensure_tensor(1) - t.f.sigmoid_map(t)))
+        grad_t = t.f.mul_zip(
+            t.f.sigmoid_map(t), (t._ensure_tensor(1) - t.f.sigmoid_map(t))
+        )
         return grad_t * grad_output
 
 
@@ -262,7 +270,9 @@ class EQ(Function):
 
 class IsClose(Function):
     @staticmethod
-    def forward(ctx: Context, t1: Tensor, t2: Tensor, tolerance: float = 1e-5) -> Tensor:
+    def forward(
+        ctx: Context, t1: Tensor, t2: Tensor, tolerance: float = 1e-5
+    ) -> Tensor:
         """Forward method for Tensor is_close"""
         # raise NotImplementedError("Need to implement for Task 2.3")
         ctx.save_for_backward(t1, t2)
@@ -279,12 +289,12 @@ class Permute(Function):
     @staticmethod
     def forward(ctx: Context, t: Tensor, dims: Optional[Tensor] = None) -> Tensor:
         """Forward method for Tensor Permute"""
-        ctx.save_for_backward(dims)
+        ctx.save_for_backward(dims, t)
 
         if dims is None:
             ctx.save_for_backward(tuple(range(len(t.shape))))
             return t
-        
+
         dims_numpy = dims.to_numpy()
         dims = tuple(int(dim) for dim in dims_numpy)
 
@@ -297,10 +307,14 @@ class Permute(Function):
     @staticmethod
     def backward(ctx: Context, grad_output: Tensor) -> Tuple[Tensor, Tensor]:
         """Backward method for Tensor Permute"""
-        (dims,) = ctx.saved_tensors
+        (dims, t) = ctx.saved_tensors
 
         if dims is None:
-            return grad_output, minitorch.Tensor.make(list(range(len(grad_output.shape))), grad_output.shape, backend=t.backend)
+            return grad_output, minitorch.Tensor.make(
+                list(range(len(grad_output.shape))),
+                grad_output.shape,
+                backend=t.backend,
+            )
 
         dims_numpy = dims.to_numpy()
         dims_tuple = tuple(int(dim) for dim in dims_numpy)
@@ -310,15 +324,16 @@ class Permute(Function):
         permuted_grad_data = grad_output._tensor.permute(*inverse_dims)
 
         return minitorch.Tensor.make(
-            permuted_grad_data._storage, permuted_grad_data.shape, backend=grad_output.backend
+            permuted_grad_data._storage,
+            permuted_grad_data.shape,
+            backend=grad_output.backend,
         ), dims
-
-
 
 
 class View(Function):
     @staticmethod
     def forward(ctx: Context, a: Tensor, shape: Tensor) -> Tensor:
+        """Forward function for View Method"""
         ctx.save_for_backward(a.shape)
         assert a._tensor.is_contiguous(), "Must be contiguous to view"
         shape2 = [int(shape[i]) for i in range(shape.size)]
@@ -481,6 +496,7 @@ def tensor(
 def grad_central_difference(
     f: Any, *vals: Tensor, arg: int = 0, epsilon: float = 1e-6, ind: UserIndex
 ) -> float:
+    """Gradient check for Tensors"""
     x = vals[arg]
     up = zeros(x.shape)
     up[ind] = epsilon

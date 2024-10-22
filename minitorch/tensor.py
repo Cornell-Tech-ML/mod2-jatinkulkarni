@@ -30,7 +30,6 @@ from .tensor_functions import (
     Sigmoid,
     Sum,
     View,
-    tensor,
 )
 
 if TYPE_CHECKING:
@@ -95,9 +94,11 @@ class Tensor:
         self.f = backend
 
     def requires_grad_(self, x: bool) -> None:
+        """Sets self.history to new History object"""
         self.history = History()
 
     def requires_grad(self) -> bool:
+        """Returns a bool to see if self.history is none"""
         return self.history is not None
 
     def to_numpy(self) -> npt.NDArray[np.float64]:
@@ -194,6 +195,8 @@ class Tensor:
         # END CODE CHANGE (2021)
 
     def zeros(self, shape: Optional[UserShape] = None) -> Tensor:
+        """Creates a zero Tensor of shape shape"""
+
         def zero(shape: UserShape) -> Tensor:
             return Tensor.make(
                 [0.0] * int(operators.prod(shape)), shape, backend=self.backend
@@ -239,14 +242,17 @@ class Tensor:
         return self.history is not None and self.history.last_fn is None
 
     def is_constant(self) -> bool:
+        """Returns if self is a constant"""
         return self.history is None
 
     @property
     def parents(self) -> Iterable[Variable]:
+        """Returns an iterable of parents"""
         assert self.history is not None
         return self.history.inputs
 
     def chain_rule(self, d_output: Any) -> Iterable[Tuple[Variable, Any]]:
+        """Computes the chain rule of the current tensor"""
         h = self.history
         assert h is not None
         assert h.last_fn is not None
@@ -260,6 +266,7 @@ class Tensor:
         ]
 
     def backward(self, grad_output: Optional[Tensor] = None) -> None:
+        """Computs backward of the current tensor"""
         if grad_output is None:
             assert self.shape == (1,), "Must provide grad_output if non-scalar"
             grad_output = Tensor.make([1.0], (1,), backend=self.backend)
@@ -310,6 +317,7 @@ class Tensor:
 
     Should set .grad to None - zero_grad_
     """
+
     @property
     def size(self) -> int:
         """Return the total number of elements in the tensor."""
@@ -319,8 +327,6 @@ class Tensor:
     def dims(self) -> int:
         """Return the number of dimensions in the tensor."""
         return len(self.shape)
-
-
 
     def __add__(self, y: Tensor) -> Tensor:
         """Adding self Tensor and y Tensor"""
@@ -388,7 +394,7 @@ class Tensor:
     def log(self) -> Tensor:
         """Appllies Log to self Tensor"""
         return Log.apply(self)
-    
+
     def exp(self) -> Tensor:
         """Applies Exp to self Tensor"""
         return Exp.apply(self)
@@ -404,7 +410,7 @@ class Tensor:
         """Calculates mean of Tensor"""
         summed = self.sum(dim)
         if dim is None:
-            num_elements = self.size 
+            num_elements = self.size
         else:
             num_elements = self.shape[dim]
         return summed / num_elements
@@ -417,23 +423,18 @@ class Tensor:
         dims_tensor = Tensor.make(list(dims), (len(dims),), backend=self.backend)
         return Permute.apply(self, dims_tensor)
 
-
     def view(self, *dims: int) -> Tensor:
         """Performs view on Tensor"""
         # If no dimensions are passed, return the tensor as-is
         if len(dims) == 0:
             return self
-        
+
         # Ensure that dims are valid integers and convert them to a tensor
         dims_tensor = Tensor.make(list(dims), (len(dims),), backend=self.backend)
 
         # Apply the View operation
         return View.apply(self, dims_tensor)
 
-
     def zero_grad_(self) -> None:
         """Sets grad to None"""
         self.grad = None
-
-
-    

@@ -29,9 +29,9 @@ class Network(minitorch.Module):
         x -> layer1 -> relu -> layer2 -> relu -> layer3 -> sigmoid
         """
         middle = self.layer1.forward(x).relu()
-        
+
         end = self.layer2.forward(middle).relu()
-        
+
         return self.layer3.forward(end).sigmoid()
 
 
@@ -54,7 +54,7 @@ class Linear(minitorch.Module):
 
         batch_size = inputs.shape[0]
         in_size = inputs.shape[1]
-        bias = self.bias.value 
+        bias = self.bias.value
         out_size = self.out_size
 
         weights = self.weights
@@ -70,7 +70,7 @@ class Linear(minitorch.Module):
         return output + bias
 
 
-       
+
 
 
 
