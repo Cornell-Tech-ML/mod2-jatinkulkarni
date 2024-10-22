@@ -371,7 +371,7 @@ class Tensor:
         """Right multiplying self Tensor and y Tensor"""
         return self.__mul__(y)
 
-    def all(self, dim: Tensor = None) -> Tensor:
+    def all(self, dim: Optional[Tensor] = None) -> Tensor:
         """Return All for self Tensor"""
         if dim is not None:
             dim = self._ensure_tensor(dim)
@@ -399,20 +399,21 @@ class Tensor:
         """Applies Exp to self Tensor"""
         return Exp.apply(self)
 
-    def sum(self, dim: Tensor = None) -> Tensor:
+    def sum(self, dim: Optional[Any] = None) -> Tensor:
         """Applies sum to self, tensor"""
         if dim is not None:
             dim = self._ensure_tensor(dim)
             return Sum.apply(self, dim)
         return Sum.apply(self)
 
-    def mean(self, dim: Tensor = None) -> Tensor:
+    def mean(self, dim: Optional[Tensor] = None) -> Tensor:
         """Calculates mean of Tensor"""
         summed = self.sum(dim)
         if dim is None:
             num_elements = self.size
         else:
-            num_elements = self.shape[dim]
+            dim = self._ensure_tensor(dim)
+            num_elements = self.shape[int(dim.item())]
         return summed / num_elements
 
     def permute(self, *dims: int) -> Tensor:

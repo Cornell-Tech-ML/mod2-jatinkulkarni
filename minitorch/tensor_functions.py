@@ -103,7 +103,7 @@ class Add(Function):
 
 class All(Function):
     @staticmethod
-    def forward(ctx: Context, a: Tensor, dim: Tensor = None) -> Tensor:
+    def forward(ctx: Context, a: Tensor, dim: Optional[Tensor] = None) -> Tensor:
         """Return 1 if all are true"""
         if dim is not None:
             return a.f.mul_reduce(a, int(dim.item()))
@@ -201,18 +201,18 @@ class Exp(Function):
 
 class Sum(Function):
     @staticmethod
-    def forward(ctx: Context, t: Tensor, dim: Tensor = None) -> Tensor:
+    def forward(ctx: Context, t: Tensor, dim: Optional[Tensor] = None) -> Tensor:
         """Forward method for Tensor Sum"""
         # raise NotImplementedError("Need to implement for Task 2.3")
         ctx.save_for_backward(t, dim)
         if dim is not None:
-            dim = dim.item()
-            return t.f.add_reduce(t, int(dim))
+            dim_val = dim.item()
+            return t.f.add_reduce(t, int(dim_val))
         else:
             return t.f.add_reduce(t.contiguous().view(int(operators.prod(t.shape))), 0)
 
     @staticmethod
-    def backward(ctx: Context, grad_output: Tensor) -> Tuple[Tensor,]:
+    def backward(ctx: Context, grad_output: Tensor) -> Tuple[Tensor, Optional[Tensor]]:
         """Backward method for Tensor Sum"""
         (t, dim) = ctx.saved_tensors
 
@@ -296,9 +296,9 @@ class Permute(Function):
             return t
 
         dims_numpy = dims.to_numpy()
-        dims = tuple(int(dim) for dim in dims_numpy)
+        dims_val = tuple(int(dim) for dim in dims_numpy)
 
-        permuted_tensor_data = t._tensor.permute(*dims)
+        permuted_tensor_data = t._tensor.permute(*dims_val)
 
         return minitorch.Tensor.make(
             permuted_tensor_data._storage, permuted_tensor_data.shape, backend=t.backend
