@@ -99,7 +99,7 @@ def broadcast_index(
 
     for i, dim in enumerate(shape):
         big_dim_index = i + offset
-        
+
         if dim == 1:
             out_index[i] = 0
         else:
