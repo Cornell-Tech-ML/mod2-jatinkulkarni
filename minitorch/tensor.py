@@ -426,14 +426,11 @@ class Tensor:
 
     def view(self, *dims: int) -> Tensor:
         """Performs view on Tensor"""
-        # If no dimensions are passed, return the tensor as-is
         if len(dims) == 0:
             return self
 
-        # Ensure that dims are valid integers and convert them to a tensor
         dims_tensor = Tensor.make(list(dims), (len(dims),), backend=self.backend)
 
-        # Apply the View operation
         return View.apply(self, dims_tensor)
 
     def zero_grad_(self) -> None:

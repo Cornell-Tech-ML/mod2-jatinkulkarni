@@ -330,6 +330,7 @@ class Permute(Function):
         ), dims
 
 
+
 class View(Function):
     @staticmethod
     def forward(ctx: Context, a: Tensor, shape: Tensor) -> Tensor:
